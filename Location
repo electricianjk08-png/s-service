@@ -1,0 +1,11 @@
+<section id="location" style="padding: 30px; text-align: center;">
+  <h2>GS SERVICE - Our Location</h2>
+  <p>Electrical Services in Kathua</p>
+
+  <a href="https://maps.app.goo.gl/1S8e41wayRgjEiui6"
+     target="_blank"
+     rel="noopener noreferrer"
+     style="display: inline-block; background: #007bff; color: white; padding: 12px 22px; text-decoration: none; border-radius: 8px;">
+    📍 View Our Location on Google Maps
+  </a>
+</section>
