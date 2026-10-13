@@ -141,3 +141,92 @@ async function loadTechnicians(){
   list.querySelectorAll("[data-toggle-tech]").forEach(b=>b.addEventListener("click",async()=>{const next=b.dataset.status==="Inactive"?"Active":"Inactive";try{await updateDoc(doc(db,"technicians",b.dataset.toggleTech),{status:next});await loadTechnicians();}catch(err){alert(friendlyError(err));}}));
  }catch(err){list.innerHTML=`<div class="empty">${esc(friendlyError(err))}</div>`;}
 }
+
+async function loadTechnicianDashboard() {
+  if (!currentUser || currentRole !== "technician") return;
+
+  const list = document.getElementById("technician-bookings");
+  list.textContent = "Loading complaints...";
+
+  try {
+    const q = query(
+      collection(db, "bookings"),
+      where("assignedTo", "==", currentUser.uid)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      list.textContent = "Abhi koi complaint assign nahi hui.";
+      return;
+    }
+
+    list.innerHTML = "";
+
+    snap.forEach(item => {
+      const b = item.data();
+      const card = document.createElement("article");
+      card.className = "booking-card";
+
+      const title = document.createElement("h3");
+      title.textContent = b.service || "Electrical complaint";
+
+      const details = document.createElement("p");
+      details.textContent =
+        "Customer: " + (b.customerName || "") +
+        " | Phone: " + (b.phone || "") +
+        " | Address: " + (b.address || "");
+
+      const problem = document.createElement("p");
+      problem.textContent = "Problem: " + (b.problem || "");
+
+      const status = document.createElement("p");
+      status.textContent = "Status: " + (b.status || "Pending");
+
+      const select = document.createElement("select");
+      ["Pending", "In Progress", "Completed"].forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        option.selected = (b.status || "Pending") === value;
+        select.appendChild(option);
+      });
+
+      select.addEventListener("change", async () => {
+        try {
+          await updateDoc(doc(db, "bookings", item.id), {
+            status: select.value,
+            updatedAt: serverTimestamp()
+          });
+          await loadTechnicianDashboard();
+        } catch (error) {
+          alert("Status update nahi hua. Firebase Rules check karein.");
+        }
+      });
+
+      card.append(title, details, problem, status, select);
+      list.appendChild(card);
+    });
+  } catch (error) {
+    list.textContent = "Complaints load nahi hui. Firebase Rules check karein.";
+    console.error(error);
+  }
+}
+
+document.getElementById("refresh-technician")
+  .addEventListener("click", loadTechnicianDashboard);
+
+document.querySelectorAll(".technician-only").forEach(button => {
+  button.classList.toggle("hidden", currentRole !== "technician");
+});
+
+if (currentRole === "technician") {
+  await loadTechnicianDashboard();
+}
+
+if (
+  b.dataset.view === "technician-dashboard" &&
+  currentRole === "technician"
+) {
+  await loadTechnicianDashboard();
+}
